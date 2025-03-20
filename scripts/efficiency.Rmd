@@ -26,450 +26,132 @@ path_to_data <- '../data/'
 ```
 
 ```{r}
-reg_szn_data_path <- file.path(path_to_data, 'MRegularSeasonDetailedResults.csv')
-reg_szn_data <- read.csv(reg_szn_data_path)
-
-```
-
-```{r}
-# create new column, approximation of number of possessions
-reg_szn_data <- reg_szn_data %>%
-  mutate(WNumPoss = WFGA + (WFTA / 2) + WTO) %>%
-  mutate(WOEff = WScore / WNumPoss) %>%
-  mutate(WFGP = WFGM / WFGA) %>%
-  mutate(WFGP3 = WFGM3 / WFGA3) %>%
-  mutate(WFTP = WFTM / WFTA) %>%
-  mutate(W3PP = WFGA3/ WFGA) %>%
-  mutate(LNumPoss = LFGA + (LFTA / 2) + LTO) %>%
-  mutate(LOEff = LScore / LNumPoss) %>%
-  mutate(LFGP = LFGM / LFGA) %>%
-  mutate(LFGP3 = LFGM3 / LFGA3) %>%
-  mutate(LFTP = LFTM / LFTA) %>%
-  mutate(L3PP = LFGA3/ LFGA)
-
-# mean impute all columns in case of NAs:
-reg_szn_data[] <- lapply(reg_szn_data, function(x) ifelse(is.na(x), mean(x, na.rm = TRUE), x))
-
-if(!dir.exists(file.path(path_to_data, 'custom_datasets'))){
-  dir.create(file.path(path_to_data, 'custom_datasets'), recursive =TRUE)
-}
-write.csv(reg_szn_data, file.path(path_to_data, 'custom_datasets', 'my_reg_szn_data.csv'))
-
-```
-
-```{r}
-train_years <- c(2003, 2004, 2006, 2007, 2008, 2010, 2011, 2013, 2014, 2015, 2017, 2018, 2021, 2022, 2024)
-val_years <- c(2005, 2009, 2012, 2016, 2019, 2023)
-
-```
-
-
-```{r}
-# transform reg szn data to one row per team, keeping custom features
-
-# keep_this_col_onwards <- which(colnames(reg_szn_data) == 'WNumPoss')
-# keeping_these_cols <- colnames(reg_szn_data)[keep_this_col_onwards:ncol(reg_szn_data)]
-
-w_colnames <- colnames(reg_szn_data)[grep("^W", colnames(reg_szn_data))]
-w_colnames <- w_colnames[w_colnames != 'WLoc']
-l_colnames <- colnames(reg_szn_data)[grep("^L", colnames(reg_szn_data))]
-adj_colnames <- substr(w_colnames, 2, nchar(w_colnames))
-
-all_w_colnames <- c('Season', w_colnames)
-all_l_colnames <- c('Season', l_colnames)
-new_colnames <- c('Season', adj_colnames)
-# all_keep_w_colnames <- c('Season', )
-
-# growing_mat <- matrix(data = NA,
-#                       nrow = nrow(reg_szn_data)*2,
-#                       ncol = length(all_w_colnames))
-
-list_of_vecs <- list()
-for(i in seq_len(nrow(reg_szn_data))){
-  # print(i)
-  winning_team <- reg_szn_data$WTeamID[i]
-  winning_row <- reg_szn_data[i, all_w_colnames]
-  # growing_mat[(2*i)-1, ] <- winning_row
-  list_of_vecs[[(2*i)-1]] <- as.numeric(winning_row)
-  
-  losing_team <- reg_szn_data$LTeamID[i]
-  losing_row <- reg_szn_data[i, all_l_colnames]
-  # growing_mat[(2*i), ] <- losing_row
-  list_of_vecs[[(2*i)]] <- as.numeric(losing_row)
-  
-  if(i %% 10000 == 0){
-    print(paste0(i, '/', nrow(reg_szn_data)))
-  }
+df1 <- data.frame('a' = c(1,2,3))
+df2 <- data.frame('a' = c(1,2,3))
+df3 <- data.frame('a' = c(1,2,3))
+this_list <- list('train' = df1,
+                  'val' = df2, 
+                  'test' = df3)
+for(i in seq_len(length(this_list))){
+    
+    this_df <- this_list[[i]]
+    df_name <- names(this_list)[i]
 }
 
 
-big_reg_szn_df <- data.frame(do.call(rbind, list_of_vecs))
-colnames(big_reg_szn_df) <- new_colnames
-
-big_reg_szn_df_train <- big_reg_szn_df %>%
-  filter(Season %in% train_years)
-big_reg_szn_df_val <- big_reg_szn_df %>%
-  filter(Season %in% val_years)
-write.csv(big_reg_szn_df_train, file.path(path_to_data, 'custom_datasets', 'big_reg_szn_train.csv'))
-write.csv(big_reg_szn_df_val, file.path(path_to_data, 'custom_datasets', 'big_reg_szn_val.csv'))
 ```
 
 
 ```{r}
-# all relative features will be winner - loser
-reg_szn_diff_data <- reg_szn_data %>%
-  mutate(NumPossDiff = WNumPoss - LNumPoss,
-         OEffDiff = WOEff - LOEff,
-         FGPDiff = WFGP - LFGP,
-         FGP3Diff = WFGP3 - LFGP3,
-         FTPDiff = WFTP - LFTP,
-         PP3Diff = W3PP - L3PP,
-         PointDiff = WScore - LScore) %>%
-  select(Season, WTeamID, LTeamID, PointDiff, NumPossDiff, 
-         OEffDiff, FGPDiff, FGP3Diff,
-         FTPDiff, PP3Diff)
-```
-
-
-
-
-
-```{r}
-reg_szn_train <- reg_szn_data %>%
-  filter(Season %in% train_years)
-reg_szn_val <- reg_szn_data %>%
-  filter(Season %in% val_years)
-
-reg_szn_diff_train <- reg_szn_diff_data %>%
-  filter(Season %in% train_years)
-reg_szn_diff_val <- reg_szn_diff_data %>%
-  filter(Season %in% val_years)
-```
-
-```{r}
-# remove season, team ids
-diff_features <- colnames(reg_szn_diff_train)[4:ncol(reg_szn_diff_train)]
-
-growing_mat <- matrix(data = NA, nrow = nrow(reg_szn_diff_train)*2, 
-                      ncol = length(diff_features)+2)
-
-# counter <- 1
-for(i in 1:nrow(reg_szn_diff_train)){
-  win_team_features <- as.numeric(c(reg_szn_diff_train$Season[i],
-                                    reg_szn_diff_train$WTeamID[i],
-                                    reg_szn_diff_train[i, diff_features]))
-  growing_mat[(2*i)-1, ] <- win_team_features
-  # counter <- counter + 1
+write_full_diffs_df <- function(path_to_regszn_data, m_or_w){
+ 
+  reg_szn_data <- read.csv(path_to_regszn_data)
   
+  # create new column, approximation of number of possessions
+  reg_szn_data <- reg_szn_data %>%
+    mutate(WNumPoss = WFGA + (WFTA / 2) + WTO) %>%
+    mutate(WOEff = WScore / WNumPoss) %>%
+    mutate(WFGP = WFGM / WFGA) %>%
+    mutate(WFGP3 = WFGM3 / WFGA3) %>%
+    mutate(WFTP = WFTM / WFTA) %>%
+    mutate(W3PP = WFGA3/ WFGA) %>%
+    mutate(LNumPoss = LFGA + (LFTA / 2) + LTO) %>%
+    mutate(LOEff = LScore / LNumPoss) %>%
+    mutate(LFGP = LFGM / LFGA) %>%
+    mutate(LFGP3 = LFGM3 / LFGA3) %>%
+    mutate(LFTP = LFTM / LFTA) %>%
+    mutate(L3PP = LFGA3/ LFGA)
   
-  lose_team_features <- as.numeric(c(reg_szn_diff_train$Season[i],
-                                     reg_szn_diff_train$LTeamID[i],
-                                     -1*reg_szn_diff_train[i, diff_features]))
-  growing_mat[(2*i), ] <- lose_team_features
-  # counter <- counter + 1
+  # mean impute all columns in case of NAs:
+  reg_szn_data[] <- lapply(reg_szn_data, function(x) ifelse(is.na(x), mean(x, na.rm = TRUE), x))
   
-  if(i %% 10000 == 0){
-    print(paste0(i, '/', nrow(reg_szn_diff_train)))
+  if(!dir.exists(file.path(path_to_data, 'custom_datasets'))){
+    dir.create(file.path(path_to_data, 'custom_datasets'), recursive =TRUE)
   }
   
-}
-
-reg_szn_diff_train_df <- as.data.frame(growing_mat)
-adjusted_colnames <- c('Season', 'TeamID')
-adjusted_colnames <- append(adjusted_colnames, colnames(reg_szn_diff_train)[4:ncol(reg_szn_diff_train)])
-colnames(reg_szn_diff_train_df) <- adjusted_colnames
-
-write.csv(reg_szn_diff_train_df, file.path(path_to_data, 'custom_datasets', 'train_diffs.csv'))
-
-```
-
-```{r}
-# remove season, team ids
-diff_features <- colnames(reg_szn_diff_val)[4:ncol(reg_szn_diff_val)]
-
-growing_mat <- matrix(data = NA, nrow = nrow(reg_szn_diff_val)*2, 
-                      ncol = length(diff_features)+2)
-
-# counter <- 1
-for(i in 1:nrow(reg_szn_diff_val)){
-  win_team_features <- as.numeric(c(reg_szn_diff_val$Season[i],
-                                    reg_szn_diff_val$WTeamID[i],
-                                    reg_szn_diff_val[i, diff_features]))
-  growing_mat[(2*i)-1, ] <- win_team_features
-  # counter <- counter + 1
+  train_years <- c(2003, 2004, 2006, 2007, 2008, 2010, 2011, 2013, 2014, 2015, 2017, 2018, 2021, 2022, 2024)
+  val_years <- c(2005, 2009, 2012, 2016, 2019, 2023)
   
+  # all relative features will be winner - loser
+  reg_szn_diff_data <- reg_szn_data %>%
+    mutate(NumPossDiff = WNumPoss - LNumPoss,
+           OEffDiff = WOEff - LOEff,
+           FGPDiff = WFGP - LFGP,
+           FGP3Diff = WFGP3 - LFGP3,
+           FTPDiff = WFTP - LFTP,
+           PP3Diff = W3PP - L3PP,
+           PointDiff = WScore - LScore) %>%
+    select(Season, WTeamID, LTeamID, PointDiff, NumPossDiff, 
+           OEffDiff, FGPDiff, FGP3Diff,
+           FTPDiff, PP3Diff)
   
-  lose_team_features <- as.numeric(c(reg_szn_diff_val$Season[i],
-                                     reg_szn_diff_val$LTeamID[i],
-                                     -1*reg_szn_diff_val[i, diff_features]))
-  growing_mat[(2*i), ] <- lose_team_features
-  # counter <- counter + 1
+  reg_szn_diff_train <- reg_szn_diff_data %>%
+    filter(Season %in% train_years)
+  reg_szn_diff_val <- reg_szn_diff_data %>%
+    filter(Season %in% val_years)
+  reg_szn_diff_2025 <- reg_szn_diff_data %>%
+    filter(Season == 2025)
   
-  if(i %% 10000 == 0){
-    print(paste0(i, '/', nrow(reg_szn_diff_val)))
+  train_val_test_list <- list('train' = reg_szn_diff_train, 
+                              'val' = reg_szn_diff_val, 
+                              'test' = reg_szn_diff_2025)
+  
+  for(i in seq_len(length(train_val_test_list))){
+    
+    this_df <- train_val_test_list[[i]]
+    df_name <- names(train_val_test_list)[i]
+
+    # remove season, team ids
+    diff_features <- colnames(this_df)[4:ncol(this_df)]
+    
+    growing_mat <- matrix(data = NA, nrow = nrow(this_df)*2, 
+                          ncol = length(diff_features)+2)
+    
+    # counter <- 1
+    for(i in 1:nrow(this_df)){
+      win_team_features <- as.numeric(c(this_df$Season[i],
+                                        this_df$WTeamID[i],
+                                        this_df[i, diff_features]))
+      growing_mat[(2*i)-1, ] <- win_team_features
+      
+      lose_team_features <- as.numeric(c(this_df$Season[i],
+                                         this_df$LTeamID[i],
+                                         -1*this_df[i, diff_features]))
+      growing_mat[(2*i), ] <- lose_team_features
+
+      if(i %% 10000 == 0){
+        print(paste0(i, '/', nrow(this_df)))
+      }
+      
+    }
+    
+    reg_szn_df <- as.data.frame(growing_mat)
+    adjusted_colnames <- c('Season', 'TeamID')
+    adjusted_colnames <- append(adjusted_colnames, colnames(this_df)[4:ncol(this_df)])
+    colnames(reg_szn_df) <- adjusted_colnames
+    
+    write.csv(reg_szn_df, file.path(path_to_data, 'custom_datasets', paste0(m_or_w, '_', df_name, '_diffs.csv')))
+    
+    print(paste0('finished ', df_name))
+      
   }
   
-}
 
-reg_szn_diff_val_df <- as.data.frame(growing_mat)
-adjusted_colnames <- c('Season', 'TeamID')
-adjusted_colnames <- append(adjusted_colnames, colnames(reg_szn_diff_val)[4:ncol(reg_szn_diff_val)])
-colnames(reg_szn_diff_val_df) <- adjusted_colnames
-
-write.csv(reg_szn_diff_val_df, file.path(path_to_data, 'custom_datasets', 'val_diffs.csv'))
-
-
-```
-
-
-########################################################################################################
-########################################################################################################
-########################################################################################################
-########################################################################################################
-########################################################################################################
-########################################################################################################
-
-```{r}
-```
-
-
-
-
-```{r}
-testvec <- c(1,3,5,6,7,8,89)
-testvec[c(1, 3:length(testvec))]
-```
-
-
-```{r}
-colnames(reg_szn_train)
-```
-
-```{r}
-paste(c('hello', sort(c(3, 1))), collapse = '_')
-```
-
-
-```{r}
-expanded_df <- reg_szn_train %>%
-  mutate(game_id = paste(c(Season, DayNum, sort(c(WTeamID, LTeamID))), collapse = '_'))
-```
-
-
-
-```{r}
-
-# if train dat has X columns, then... 
-# growing mat will end up with (X - 3)
-# minus 3 comes from Season, DayNum, and NumOT (only need these indicators once ... )
-growing_mat <- matrix(data = NA, nrow = 0, ncol = (ncol(reg_szn_train)-3))
-
-# which columns start with a W ... 
-w_colnames <- grep(pattern = '^W', x = colnames(reg_szn_train), value = TRUE)
-l_colnames <- grep(pattern = '^L', x = colnames(reg_szn_train), value = TRUE)
-
-# remove the w from the colnames:
-stat_colnames <- substring(w_colnames, first = 2)
-
-this_team_colnames <- paste0('team_', stat_colnames)
-opp_colnames <- paste0('opp_', stat_colnames)
-
-# create team vs opp dataframe:
-# will have twice as many rows as original since each row will be broken into team and opp rows
-# for(i in 1:nrow(reg_szn_train)){
-for(i in 1:2){
-  
-  
-  constant_cols <- c('Season', 'DayNum', 'NumOT')
-  constant_cols_vals <- reg_szn_train[i, constant_cols]
-  
-  this_team_winner <- reg_szn_data[i, w_colnames]
-  this_team_loser <- reg_szn_data[i, l_colnames]
-  
-  this_order <- c(constant_cols, this_team_winner, this_team_loser)
-  
-  growing_mat <- rbind(growing_mat, this_order)
-  
-  reverse_order <- c(constant_cols_vals, this_team_loser, this_team_winner)
-  
-  growing_mat <- rbind(growing_mat, reverse_order)
-  
-  growing_mat <- as.data.frame(growing_mat)
-  
-  # winning_team <- reg_szn_train$WTeamID[i]
-  # losing_team <- reg_szn_train$LTeamID[i]
-  
-  growing_mat_colnames <- c(constant_cols, this_team_colnames, opp_colnames)
-  colnames(growing_mat) <- growing_mat_colnames
-  rownames(growing_mat) <- NULL
 }
 ```
 
 ```{r}
-View(growing_mat)
+write_full_diffs_df(path_to_regszn_data = file.path(path_to_data, 'MRegularSeasonDetailedResults.csv'), 
+                    m_or_w = 'MENS')
+write_full_diffs_df(path_to_regszn_data = file.path(path_to_data, 'WRegularSeasonDetailedResults.csv'), 
+                    m_or_w = 'WOMENS')
 ```
 
-
-
-```{r}
-# should melt the dataframe to allow for learning of both teams' metrics in a game
-# include both teams' fouls as offensive stats
-winner_off_eff_feats <- c('Season', 'WTeamID', 'WScore', 'WOEff', 'WFGP', 'WFGP3', 'WFTP', 'WNumPoss', 'WAst', 'WOR', 'WPF', 'LPF', 'W3PP')
-winner_def_eff_feats <- c('Season', 'WTeamID', 'LScore', 'LOEff', 'LFGP', 'LFGP3', 'L3PP', 'LNumPoss', 'WDR', 'WBlk', 'WPF', 'WStl')
-
-loser_off_eff_feats <- c('Season', 'LTeamID','WScore', 'LOEff', 'LFGP', 'LFGP3', 'LFTP', 'LNumPoss', 'LAst', 'LOR', 'LPF', 'WPF', 'L3PP')
-loser_def_eff_feats <- c('Season', 'LTeamID','LScore', 'WOEff', 'WFGP', 'WFGP3', 'W3PP', 'WNumPoss', 'LDR', 'LBlk', 'LPF', 'LStl')
-
-
-```
-
-```{r}
-winner_off_eff_reg_szn_train <- reg_szn_train %>%
-  select(all_of(winner_off_eff_feats))
-winner_def_eff_reg_szn_train <- reg_szn_train %>%
-  select(all_of(winner_def_eff_feats))
-loser_off_eff_reg_szn_train <- reg_szn_train %>%
-  select(all_of(loser_off_eff_feats))
-loser_def_eff_reg_szn_train <- reg_szn_train %>%
-  select(all_of(loser_def_eff_feats))
-```
-
-```{r}
-if(!dir.exists(file.path(path_to_data, 'custom_datasets'))){
-  dir.create(file.path(path_to_data, 'custom_datasets'), recursive = TRUE)
-}
-
-write.csv(winner_off_eff_reg_szn_train, file.path(path_to_data, 'custom_datasets', 'winner_off_train.csv'))
-write.csv(winner_def_eff_reg_szn_train, file.path(path_to_data, 'custom_datasets', 'winner_def_train.csv'))
-write.csv(loser_off_eff_reg_szn_train, file.path(path_to_data, 'custom_datasets', 'loser_off_train.csv'))
-write.csv(loser_def_eff_reg_szn_train, file.path(path_to_data, 'custom_datasets','loser_def_train.csv'))
-```
-
-
-```{r}
-# play around with normalization schemes later on ... 
-# here, scale but and center
-scaled_winner_off_eff_reg_szn_train <- scale(winner_off_eff_reg_szn_train[, 2:ncol(winner_off_eff_reg_szn_train)], 
-                                             center = FALSE, scale = TRUE)
-scaled_winner_def_eff_reg_szn_train <- scale(winner_def_eff_reg_szn_train[, 2:ncol(winner_def_eff_reg_szn_train)], 
-                                             center = FALSE, scale = TRUE)
-scaled_loser_off_eff_reg_szn_train <- scale(loser_off_eff_reg_szn_train[, 2:ncol(loser_off_eff_reg_szn_train)], 
-                                             center = FALSE, scale = TRUE)
-scaled_loser_def_eff_reg_szn_train <- scale(loser_def_eff_reg_szn_train[, 2:ncol(loser_def_eff_reg_szn_train)], 
-                                             center = FALSE, scale = TRUE)
-```
-
-```{r}
-# find PCs
-winner_off_eff_pcs <- prcomp(scaled_winner_off_eff_reg_szn_train)
-winner_def_eff_pcs <- prcomp(scaled_winner_def_eff_reg_szn_train)
-loser_off_eff_pcs <- prcomp(scaled_loser_off_eff_reg_szn_train)
-loser_def_eff_pcs <- prcomp(scaled_loser_def_eff_reg_szn_train)
-
-# Check for NAs in each column
-# colSums(is.na(scaled_loser_off_eff_reg_szn_train))
-
-# which(rowSums(is.na(scaled_loser_off_eff_reg_szn_train)) > 0)
-
-
-```
-
-```{r}
-win_off_raw_pc_scores <- winner_off_eff_pcs$x %*% winner_off_eff_pcs$rotation
-```
-
-
-```{r}
-summary(winner_off_eff_pcs)
-```
-
-```{r}
-winner_off_eff_x <- winner_off_eff_pcs$x
-winner_off_eff_y <- winner_off_eff_reg_szn_train$WPF
-winner_off_cv_model <- cv.glmnet(winner_off_eff_x, winner_off_eff_y, alpha = 0)
-winner_off_pc_coefs <- coef(winner_off_cv_model, s = 'lambda.min')[-1]
-winner_off_scores <- as.vector(winner_off_eff_x %*% winner_off_pc_coefs)
-
-winner_def_eff_x <- winner_def_eff_pcs$x
-winner_def_eff_y <- winner_def_eff_reg_szn_train$WPF
-winner_def_cv_model <- cv.glmnet(winner_def_eff_x, winner_def_eff_y, alpha = 0)
-winner_def_pc_coefs <- coef(winner_def_cv_model, s = 'lambda.min')[-1]
-winner_def_scores <- as.vector(winner_def_eff_x %*% winner_def_pc_coefs)
-
-loser_off_eff_x <- loser_off_eff_pcs$x
-loser_off_eff_y <- loser_off_eff_reg_szn_train$LPF
-loser_off_cv_model <- cv.glmnet(loser_off_eff_x, loser_off_eff_y, alpha = 0)
-loser_off_pc_coefs <- coef(loser_off_cv_model, s = 'lambda.min')[-1]
-loser_off_scores <- as.vector(loser_off_eff_x %*% loser_off_pc_coefs)
-
-loser_def_eff_x <- loser_def_eff_pcs$x
-loser_def_eff_y <- loser_def_eff_reg_szn_train$LPF
-loser_def_cv_model <- cv.glmnet(loser_def_eff_x, loser_def_eff_y, alpha = 0)
-loser_def_pc_coefs <- coef(loser_def_cv_model, s = 'lambda.min')[-1]
-loser_def_scores <- as.vector(loser_def_eff_x %*% loser_def_pc_coefs)
-```
-
-```{r}
-# pc1 dataframe: scaled and centered pcs
-
-pc1_df <- data.frame(cbind(winner_off_pc_coefs[1]*winner_off_eff_pcs$x[, 1],
-                           winner_def_pc_coefs[1]*winner_def_eff_pcs$x[, 1],
-                           loser_off_pc_coefs[1]*loser_off_eff_pcs$x[, 1],
-                           loser_def_pc_coefs[1]*loser_def_eff_pcs$x[, 1]))
-colnames(pc1_df) <- c('winner_off', 'winner_df', 'loser_off', 'loser_def')
-melted_pc1_df <- reshape2::melt(pc1_df,
-                                variable.name = 'efficiency',
-                                value.name = 'score')
-
-ggplot(melted_pc1_df, aes(x = score, color = efficiency)) + 
-  geom_density() + 
-  theme_classic()
-```
-
-```{r}
-# pc1 dataframe: scaled but not centered
-
-pc1_df <- data.frame(cbind(winner_off_pc_coefs[1]*winner_off_eff_pcs$x[, 1],
-                           winner_def_pc_coefs[1]*winner_def_eff_pcs$x[, 1],
-                           loser_off_pc_coefs[1]*loser_off_eff_pcs$x[, 1],
-                           loser_def_pc_coefs[1]*loser_def_eff_pcs$x[, 1]))
-colnames(pc1_df) <- c('winner_off', 'winner_def', 'loser_off', 'loser_def')
-melted_pc1_df <- reshape2::melt(pc1_df,
-                                variable.name = 'efficiency',
-                                value.name = 'score')
-
-ggplot(melted_pc1_df, aes(x = score, color = efficiency)) + 
-  geom_density() + 
-  theme_classic() +
-  xlim(c(-.1, .1))
-
-```
-
-
-```{r}
-pcs_df <- data.frame(cbind(winner_off_pc_coefs,
-                           winner_def_pc_coefs,
-                           loser_off_pc_coefs,
-                           loser_def_pc_coefs))
-```
-
-
-
-```{r}
-eff_df <- data.frame(cbind(winner_off_scores,
-                           winner_def_scores,
-                           loser_off_scores,
-                           loser_def_scores))
-melted_eff_df <- reshape2::melt(eff_df,
-                                variable.name = 'efficiency',
-                                value.name = 'score')
-
-ggplot(melted_eff_df, aes(x = score, color = efficiency)) + 
-  geom_density() +
-  theme_classic()
-# print(head(winner_off_scores))
-# print(head(winner_def_scores))
-# print(head(loser_off_scores))
-# print(head(loser_def_scores))
-```
+#####################################################
+#####################################################
+#####################################################
+#####################################################
+#####################################################
+#####################################################
+#####################################################
 
